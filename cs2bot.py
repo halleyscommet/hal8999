@@ -53,6 +53,8 @@ gen = TemplateGenerator()
 
 last_line = ""
 
+commands_out_of_focus = []
+
 def tail_log():
     """Read the last line of console.log"""
     try:
@@ -115,6 +117,7 @@ def execute_command(command):
         # Check if CS2 is focused
         if pyautogui.getActiveWindowTitle() != "Counter-Strike 2":
             print(f"[Warn] Counter-Strike 2 is not focused, command not executed.")
+            commands_out_of_focus.append(command)
         else:
             pydirectinput.press('n')
             if show_debug:
@@ -183,6 +186,15 @@ def handle_command_immediate(chat_data):
         if show_debug:
             print(f"[Debug] Unknown command: {command}")
 
+def handle_out_of_focus_commands():
+    """Handle commands that were executed while CS2 was out of focus"""
+    global commands_out_of_focus
+    if commands_out_of_focus:
+        print(f"[CS2 ChatBot] Executing {len(commands_out_of_focus)} out-of-focus commands...")
+        for command in commands_out_of_focus:
+            execute_command(command)
+        commands_out_of_focus.clear()
+
 async def main_loop():
     """Main async loop for processing"""
     global last_line
@@ -191,6 +203,13 @@ async def main_loop():
     print(f"[CS2 ChatBot] Available commands: {', '.join([cmd.replace(globals.COMMAND_PREFIX, '') for cmd in COMMANDS.keys()])}")
     
     while True:
+        if pyautogui.getActiveWindowTitle() != "Counter-Strike 2":
+            if show_debug:
+                print("[Debug] CS2 is not focused, cant handle out-of-focus commands...")
+            await asyncio.sleep(1)
+        else:
+            handle_out_of_focus_commands()
+
         try:
             line = tail_log()
             if line and line != last_line:
