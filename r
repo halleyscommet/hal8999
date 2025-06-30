@@ -1,0 +1,5 @@
+pydirectinput
+sounddevice
+av
+numpy
+pyautogui
